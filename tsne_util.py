@@ -21,6 +21,9 @@ RS = 1
 # maps between person names (as they are in the Excel file) to the folder & pic names (initials)
 map_name_to_folder = {"Blanca":"BS", "Franka":"FP", "Giovanna":"GM","Johanna":"JS","Noomi":"NR","Carlos":"CL","Francesco":"FM","Guillame":"GC","Lambert":"LW","Stefano":"SA"}
 
+map_folder_to_name = {v: k for k, v in map_name_to_folder.items()}
+
+
 
 def transform_indices(cell):
     # print(cell)
@@ -43,7 +46,6 @@ def resize_images_func(size):
     for name in names:
         path = f"faces_for_clustering/{map_name_to_folder[name]}"
         dirs = os.listdir( path )
-
         for item in dirs:
             if os.path.isfile(f"{path}/{item}"):
                 im = Image.open(f"{path}/{item}")
@@ -94,61 +96,71 @@ def create_dist_mat():
 
 names_algo = ["Blanca", "Carlos", "Francesco", "Franka", "Giovanna", "Guillame", "Johanna", "Lambert", "Noomi", "Stefano"]
 
+sheet_name = "openface_dists - dlib align"
+file_name = 'openface_dists.xlsx'
 
-def create_pic_names_array(row):
-    for i in range(150)
+
+def create_name_start_end_indices(file_name, sheet_name):
+    wb = load_workbook(filename = file_name)
+    row = next(wb[sheet_name].rows)
+    name_to_range_indices = {}
+    name_to_picture_names = {}
+    for i in range(1,141):
+        name, number = row[i].value.split("_")
+        number = number[:-4]
+
+        if name in name_to_range_indices:
+            name_to_range_indices[name] = (min(name_to_range_indices[name][0],i), max(name_to_range_indices[name][1],i))
+        else:
+            name_to_range_indices[name] = (i,i)
+
+        if map_folder_to_name[name] in name_to_picture_names:
+            name_to_picture_names[map_folder_to_name[name]].append(number)
+        else:
+            name_to_picture_names[map_folder_to_name[name]] = [number]
+            # print(name_to_picture_names)
+    return name_to_range_indices, name_to_picture_names
+
 
 def create_dist_mat_algo():
-    wb = load_workbook(filename = 'final_distances_matrix .xlsx')
+    wb = load_workbook(filename = file_name)
     # names = ["Blanca"]
     total_matrices = {}
-    total_names_to_indices= {}
+    names_to_indices, name_to_picture_names = create_name_start_end_indices(file_name,sheet_name)
     row_counter = 0
     total_matrices= {}
     for name in names_algo:
-        total_matrices[name] =[[0]*15 for i in range(15)]
-    for row in wb["final_distances_matrix "].rows:
-        if row_counter==1:
-            map_names_to_pic_names = create_pic_names_array(row)
-
-        if row_counter>=2:
-            current_name = (row_counter -2)//15
-            dist_matrix = total_matrices[current_name]
-            dist_matrix[]
-
-
-        row_counter+=1
-
-    for name in names_algo:
-        # indices [ 2-16] = 15*index(name)+2-15*index(Name)+16
-        # 15*indexname ( 2 to 16)
-
-        names_to_index = []
-          # init an empty distance matrix of size 15*15
-        first = True
-        for row in wb[name].rows: # for each row (skip the first row)
-
-            # if first:
-            #     first = False
-            #     continue
-            # pic1, pic2 = transform_indices(row[0].value)
-            # # init a name to index mapping (an array of size 15) for each person
-            # if pic1 not in names_to_index:
-            #     names_to_index.append(pic1)
-            # if pic2 not in names_to_index:
-            #     names_to_index.append(pic2)
-            # ind1 = names_to_index.index(pic1)
-            # ind2 = names_to_index.index(pic2)
-            # dist_matrix[ind1][ind2] = row[1].value # set the distance between pic1 and pic2 in the dist matrix
-            # dist_matrix[ind2][ind1] = row[1].value # same
-        # print(dist_matrix)
-        total_matrices[name] = dist_matrix # set the mapping from person name to dist matrix
-        total_names_to_indices[name] = names_to_index # set the mapping from person name to his pics to index array
-    return total_matrices, total_names_to_indices
+        shortened_name = map_name_to_folder[name]
+        size = names_to_indices[shortened_name][1]-names_to_indices[shortened_name][0] +1
+        print(f"{name}: {size}")
+        total_matrices[name] =[[0]*size for i in range(size)]
+    rows_array = []
+    for row in wb[sheet_name].rows:
+        rows_array.append(row)
+    # rows_array = rows_array[1:]
+    for name in total_matrices:
+        shortened_name = map_name_to_folder[name]
+        start, end= names_to_indices[shortened_name]
+        for j in range(start, end+1):
+            for k in range(start, end+1):
+                total_matrices[name][j-start][k-start] = rows_array[j][k].value
+    return total_matrices, name_to_picture_names
 
 
-distance_matrices, name_to_picture_names = create_dist_mat()
 
+
+name_to_grid_limits = {
+    "Blanca":[-450,600,-450,350],
+    "Carlos":[-550,550,-800,600],
+    "Francesco":[-400,350,-250,300],
+    "Franka": [-350, 250, -400, 350],
+    "Giovanna": [-800, 600, -600, 500],
+    "Guillame": [-350, 300, -150, 350],
+    "Johanna": [-250, 450, -250, 350],
+    "Lambert": [-300, 150, -150, 200],
+    "Noomi": [-250, 450, -400, 600],
+    "Stefano": [-850, 650, -350, 500],
+}
 
 
 # a plotting function to plot the result of TSNE dimensional reduction
@@ -170,7 +182,12 @@ def tsne_scatter(x, picture_names, name_person):
     ax = plt.subplot(aspect='equal')
     sc = ax.scatter(x[:,0], x[:,1], lw=0, s=40)
     ax.axis('on')
-    xmin, xmax, ymin, ymax = -500, 500, -500, 500  # TODO: check if these limits are enough
+    ax.set_facecolor('xkcd:white')
+    ax.grid(color='xkcd:light grey')
+    # xmin, xmax, ymin, ymax = -500, 500, -500, 500  # TODO: check if these limits are enough
+    # ax.set(xlim=(xmin,xmax), ylim=(ymin,ymax))
+    xmin, xmax, ymin, ymax = name_to_grid_limits[name_person]
+    print(name_to_grid_limits[name_person])
     ax.set(xlim=(xmin,xmax), ylim=(ymin,ymax))
 
     for i, pic_name in enumerate(picture_names):
@@ -194,7 +211,10 @@ def tsne_scatter(x, picture_names, name_person):
 
 
 
+distance_matrices, name_to_picture_names = create_dist_mat()
 
+# distance_matrices, name_to_picture_names = create_dist_mat_algo()
+# print(name_to_picture_names)
 
 # a main function to iterate over all persons and plot the tsne visualization
 
