@@ -92,7 +92,12 @@ def create_dist_mat():
     return total_matrices, total_names_to_indices
 
 
-# distance_matrices, name_to_picture_names = create_dist_mat()
+
+
+#distance_matrices, name_to_picture_names = create_dist_mat()
+
+
+
 
 names_algo = ["Blanca", "Carlos", "Francesco", "Franka", "Giovanna", "Guillame", "Johanna", "Lambert", "Noomi", "Stefano"]
 
@@ -241,4 +246,14 @@ def main():
 
         tsne_scatter(fashion_tsne, names_of_pics, person_name )
 
-main()
+def main2(distance_matrices, name_to_picture_names):
+    import csv
+    with open("humanMatrices.csv", 'w', newline='') as f:
+        writer = csv.writer(f)
+        for name in name_to_picture_names:
+            writer.writerow([name])
+            writer.writerow([""]+name_to_picture_names[name])
+            for i in range(len(distance_matrices[name])):
+                writer.writerow([name_to_picture_names[name][i]]+distance_matrices[name][i])
+
+main2(distance_matrices, name_to_picture_names)
