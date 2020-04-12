@@ -24,7 +24,6 @@ map_name_to_folder = {"Blanca":"BS", "Franka":"FP", "Giovanna":"GM","Johanna":"J
 map_folder_to_name = {v: k for k, v in map_name_to_folder.items()}
 
 
-
 def transform_indices(cell):
     # print(cell)
     splitted_cell = cell.split("(")
@@ -152,8 +151,6 @@ def create_dist_mat_algo():
     return total_matrices, name_to_picture_names
 
 
-
-
 name_to_grid_limits = {
     "Blanca":[-450,600,-450,350],
     "Carlos":[-550,550,-800,600],
@@ -215,13 +212,13 @@ def tsne_scatter(x, picture_names, name_person):
     return (f, ax, sc)
 
 
-
 distance_matrices, name_to_picture_names = create_dist_mat()
 
 # distance_matrices, name_to_picture_names = create_dist_mat_algo()
 # print(name_to_picture_names)
 
 # a main function to iterate over all persons and plot the tsne visualization
+
 
 def main():
     for person_name in names:
@@ -246,6 +243,7 @@ def main():
 
         tsne_scatter(fashion_tsne, names_of_pics, person_name )
 
+
 def main2(distance_matrices, name_to_picture_names):
     import csv
     with open("humanMatrices.csv", 'w', newline='') as f:
@@ -255,5 +253,6 @@ def main2(distance_matrices, name_to_picture_names):
             writer.writerow([""]+name_to_picture_names[name])
             for i in range(len(distance_matrices[name])):
                 writer.writerow([name_to_picture_names[name][i]]+distance_matrices[name][i])
+
 
 main2(distance_matrices, name_to_picture_names)

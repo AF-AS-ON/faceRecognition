@@ -1,9 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-from sklearn.manifold import TSNE
-
 import seaborn as sns
+from sklearn.manifold import TSNE
 from openpyxl import load_workbook
 
 sns.set_style('darkgrid')
@@ -13,11 +11,11 @@ sns.set_context("notebook", font_scale=1.5,
 RS = 1
 
 
-
 # maps between person names (as they are in the Excel file) to the folder & pic names (initials)
 map_name_to_folder = {"Blanca":"BS", "Franka":"FP", "Giovanna":"GM","Johanna":"JS","Noomi":"NR","Carlos":"CL","Francesco":"FM","Guillame":"GC","Lambert":"LW","Stefano":"SA"}
 
 map_folder_to_name = {v: k for k, v in map_name_to_folder.items()}
+
 
 # get indices of the pictures from the cell value that looks like "bs(2)bs(3)" and converts it to - 2,3
 def transform_indices(cell):
@@ -190,14 +188,13 @@ distance_matrices, name_to_picture_names = create_dist_mat()
 # print(name_to_picture_names)
 
 # a main function to iterate over all persons and plot the tsne visualization
-
 def main():
     for person_name in names:
-        distance_np = np.array(distance_matrices[person_name ])
+        distance_np = np.array(distance_matrices[person_name])
         print("------------------CALCULATING DISTANCE MATRIX----------------")
         print(distance_matrices[person_name])
         print("-------------------------------------------------------------")
-        names_of_pics = np.array(name_to_picture_names[person_name ])
+        names_of_pics = np.array(name_to_picture_names[person_name])
         print("------------------NAMES OF PICTURES----------------")
         print(names_of_pics)
         print("-------------------------------------------------------------")
@@ -212,4 +209,60 @@ def main():
         print(fashion_tsne[:, 1])
         print("-------------------------------------------------------------")
 
-        tsne_scatter(fashion_tsne, names_of_pics, person_name )
+        tsne_scatter(fashion_tsne, names_of_pics, person_name)
+
+
+women_names = ['Blanca', 'Franka', 'Giovanna', 'Johanna', 'Noomi']
+men_names = ['Carlos', 'Francesco', 'Guillame', 'Lambert', 'Stefano']
+
+
+# This function - plots a visualization based on the distances given in the excel file.
+# The visualization is chosen by the "visualization_method".
+#
+# Arguments:
+# excel_filename = the filename of the excel file containing distances
+#                  between all faces relevant for analysis.
+#                  Each sheet - should contain the data for each subgroup,
+#                  Each line - should be in the following format: Pic1 Pic2 | distance
+# sheet_name = the sheet we want to plot
+# pictures_folder_path = the path to the folder containing a folder for each subgroup.
+#                        Each subfolder contains the pictures of the faces - to use in the plot.
+#                        The names of the pictures should correspond to the excel data (e.g Pic1 and Pic2)
+# visualization_method = one of the following options:
+#                        1.'tsne' - shows a tsne plot based on distances
+#                        2. 'grid-view' - by default, shows for each face a grid of 5 most similar faces.
+#                        3. 'rdm' - shows a RDM  matrix
+#                        4. 'heatmap' - shows a heatmap (similarity measure for each pair of faces in each subgroup)
+def visualize(excel_filename, sheet_name, pictures_folder_path, visualization_method):
+    import pandas as pd
+
+    # create a dataframe from the excel_filename and sheet_name
+    df = pd.read_excel(excel_filename, sheet_name=sheet_name)
+    df.drop(['Unnamed: 0'], axis=1, inplace=True)
+    labels_dic = {}
+    for i in range(df.shape[0]):
+        labels_dic[i] = df.columns[i]
+    df = df.rename(labels_dic, axis='index')
+    # print(df)
+
+    if visualization_method == 'rdm':
+        f, ax = plt.subplots(figsize=(14, 10))
+        sns.heatmap(df, ax=ax, xticklabels=True, yticklabels=True)
+        ax.set_title('RDM for women', fontsize=10)  # Set the title
+        ax.tick_params(axis='x', labelsize=5)  # change size of x-axis
+        ax.tick_params(axis='y', labelsize=5)  # change size of y-axis
+        # plt.xticks(rotation=30)
+        # plt.yticks(rotation=10)
+        f.savefig('sns_style_origin.png', dpi=100, bbox_inches='tight')  # TODO: save figure
+        plt.show()  # show plt
+
+
+visualize('openface_dists - test.xlsx', 'women','1', 'rdm')
+
+
+
+
+
+
+
+
